@@ -1,295 +1,313 @@
 import 'package:flutter/material.dart';
 import 'meal.dart';
 
-class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+class HomePage extends StatefulWidget {const HomePage({super.key});
 
-  @override
-  State<HomePage> createState() => _HomePageState();
+@override
+State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
-  // 1. Khởi tạo danh sách dữ liệu món ăn để có thể thay đổi trạng thái
-  final List<Map<String, dynamic>> _foodItems = [
+  // 3. Cấu trúc quản lý dữ liệu (Dạng JSON)
+  final List<Map<String, dynamic>> _productData = [
     {
-      'name': 'Veg Salad',
-      'price': 20.0,
-      'image': 'images/img1.png',
-      'isFav': true,
-      'isSelected': false,
-      'discount': null
+      "id": 1,
+      "name": "Veg Salad",
+      "price": 20.0,
+      "image": "images/img1.png",
+      "isFavorite": false,
+      "isSelected": false,
+      "description": "A fresh mix of seasonal vegetables, high in fiber and vitamins.",
+      "address": "123 Green Garden St, Food City",
+      "deliveryTime": "15-20 min",
+      "discount": null
     },
     {
-      'name': 'Rice',
-      'price': 30.0,
-      'image': 'images/img2.jpg',
-      'isFav': false,
-      'isSelected': false,
-      'discount': null
+      "id": 2,
+      "name": "Rice",
+      "price": 30.0,
+      "image": "images/img2.jpg",
+      "isFavorite": false,
+      "isSelected": false,
+      "description": "Steamed jasmine rice served with traditional side dishes.",
+      "address": "456 Rice Bowl Ave, Food City",
+      "deliveryTime": "25-30 min",
+      "discount": null
     },
     {
-      'name': 'Fried Chicken',
-      'price': 50.0,
-      'image': 'images/3.jpg',
-      'isFav': false,
-      'isSelected': false,
-      'discount': '10% Off'
+      "id": 3,
+      "name": "Fried Chicken",
+      "price": 50.0,
+      "image": "images/img1.png",
+      "isFavorite": false,
+      "isSelected": false,
+      "description": "Crispy golden fried chicken marinated with secret herbs.",
+      "address": "789 Crispy Corner, Food City",
+      "deliveryTime": "30-35 min",
+      "discount": "10% Off"
     },
     {
-      'name': 'Roasted Mutton',
-      'price': 90.0,
-      'image': 'images/4.jpg',
-      'isFav': true,
-      'isSelected': false,
-      'discount': null
+      "id": 4,
+      "name": "Roasted Mutton",
+      "price": 90.0,
+      "image": "images/img2.jpg",
+      "isFavorite": true,
+      "isSelected": false,
+      "description": "Slow-roasted tender mutton with aromatic spices.",
+      "address": "101 Meat Feast Rd, Food City",
+      "deliveryTime": "40-45 min",
+      "discount": null
     },
   ];
 
-  // 2. Hàm tính toán tổng số lượng item đã chọn
-  int get totalItems => _foodItems.where((item) => item['isSelected']).length;
+  List<Map<String, dynamic>> _displayedProducts = [];
+  bool _isSearchVisible = false;
+  final TextEditingController _searchController = TextEditingController();
+  int _selectedTabIndex = 0; // 0: Home, 1: Favorite, 2: Filter
 
-  // 3. Hàm tính toán tổng số tiền
-  double get totalPrice => _foodItems
-      .where((item) => item['isSelected'])
-      .fold(0, (sum, item) => sum + item['price']);
+  @override
+  void initState() {
+    super.initState();
+    _displayedProducts = List.from(_productData);
+  }
+
+  // 2.1. Event search
+  void _handleSearch(String query) {
+    setState(() {
+      if (query.isEmpty) {
+        _displayedProducts = List.from(_productData);
+      } else {
+        _displayedProducts = _productData
+            .where((p) => p['name'].toString().toLowerCase().contains(query.toLowerCase()))
+            .toList();
+      }
+    });
+  }
+
+  // 2.2. Nav tab logic
+  void _onTabSelected(int index) {
+    setState(() {
+      _selectedTabIndex = index;
+      if (index == 0) {
+        _displayedProducts = List.from(_productData);
+      } else if (index == 1) {
+        _displayedProducts = _productData.where((p) => p['isFavorite'] == true).toList();
+      } else if (index == 2) {
+        _displayedProducts = List.from(_productData);
+        _displayedProducts.sort((a, b) => (a['price'] as double).compareTo(b['price'] as double));
+      }
+    });
+  }
+
+  // 2.4. Logic tính toán Total
+  int get totalItems => _productData.where((p) => p['isSelected'] == true).length;
+  double get totalPrice => _productData
+      .where((p) => p['isSelected'] == true)
+      .fold(0, (sum, p) => sum + (p['price'] as double));
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Header: Menu and Search
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: const Icon(Icons.menu, color: Colors.grey, size: 30),
+        actions: [
+          IconButton(
+            onPressed: () {
+              setState(() {
+                _isSearchVisible = !_isSearchVisible;
+                if (!_isSearchVisible) {
+                  _searchController.clear();
+                  _handleSearch("");
+                }
+              });
+            },
+            icon: const Icon(Icons.search, color: Colors.black, size: 30),
+          ),
+          const SizedBox(width: 10),
+        ],
+      ),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (_isSearchVisible)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Icon(Icons.menu, size: 30, color: Colors.grey),
-                  IconButton(
-                    icon: const Icon(Icons.search, size: 30, color: Colors.grey),
-                    onPressed: () {},
-                  ),
-                ],
-              ),
-            ),
-
-            // Title and Location
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: const [
-                      Text(
-                        'Work Place',
-                        style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87),
-                      ),
-                      Icon(Icons.arrow_drop_down),
-                    ],
-                  ),
-                  const Text(
-                    'Choose your delicious meal',
-                    style: TextStyle(fontSize: 14, color: Colors.grey),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // Category Icons
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.only(left: 20),
-              child: Row(
-                children: [
-                  _buildCategoryItem(Icons.home, true),
-                  _buildCategoryItem(Icons.favorite, false),
-                  _buildCategoryItem(Icons.filter_alt, false),
-                  _buildCategoryItem(Icons.shopping_cart, false),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // 4. Food Grid (Sử dụng dữ liệu từ List _foodItems)
-            Expanded(
-              child: GridView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                itemCount: _foodItems.length,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  childAspectRatio: 0.75,
-                  mainAxisSpacing: 15,
-                  crossAxisSpacing: 15,
+              child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: "Search product name...",
+                  prefixIcon: const Icon(Icons.search),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
                 ),
-                itemBuilder: (context, index) {
-                  return _buildFoodCard(index);
-                },
+                onChanged: _handleSearch,
               ),
             ),
-
-            // 5. Bottom Floating Bar (Cập nhật logic hiển thị tiền)
-            if (totalItems > 0) // Chỉ hiện khi có ít nhất 1 item được chọn
-              Container(
-                margin: const EdgeInsets.all(20),
-                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF6ED57B),
-                  borderRadius: BorderRadius.circular(40),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.green.withOpacity(0.3),
-                      blurRadius: 10,
-                      offset: const Offset(0, 5),
-                    )
-                  ],
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '$totalItems Items',
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                    ),
-                    Text(
-                      '\$ ${totalPrice.toStringAsFixed(2)}',
-                      style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
-              )
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCategoryItem(IconData icon, bool isActive) {
-    return Container(
-      margin: const EdgeInsets.only(right: 15),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: isActive ? Colors.green : Colors.grey.shade300, width: 2),
-      ),
-      child: Icon(icon, color: isActive ? Colors.green : Colors.grey),
-    );
-  }
-
-  // Cập nhật hàm xây dựng card với Logic tương tác
-  Widget _buildFoodCard(int index) {
-    final item = _foodItems[index];
-
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => MealPage(
-              name: item['name'],
-              price: item['price'].toString(),
-              imgUrl: item['image'],
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              children: [
+                Text("Work Place", style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+                Icon(Icons.arrow_drop_down, size: 30),
+              ],
             ),
           ),
-        );
-      },
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20),
+            child: Text("Choose your delicious meal", style: TextStyle(color: Colors.grey, fontSize: 16)),
+          ),
+          const SizedBox(height: 25),
+
+          // Navigation Tabs
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _buildTabItem(0, Icons.home),
+                _buildTabItem(1, Icons.favorite),
+                _buildTabItem(2, Icons.tune),
+                _buildTabItem(3, Icons.shopping_cart),
+              ],
+            ),
+          ),
+          const SizedBox(height: 25),
+
+          // Product Grid
+          Expanded(
+            child: GridView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                childAspectRatio: 0.72,
+                crossAxisSpacing: 20,
+                mainAxisSpacing: 20,
+              ),
+              itemCount: _displayedProducts.length,
+              itemBuilder: (context, index) {
+                final product = _displayedProducts[index];
+                return _buildProductCard(product);
+              },
+            ),
+          ),
+
+          // Bottom Bar
+          Container(
+            margin: const EdgeInsets.all(20),
+            padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 18),
+            decoration: BoxDecoration(
+              color: const Color(0xFF6ED57B),
+              borderRadius: BorderRadius.circular(40),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('$totalItems Items', style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                Text('\$ ${totalPrice.toStringAsFixed(0)}', style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+              ],
+            ),
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTabItem(int index, IconData icon) {
+    bool isSelected = _selectedTabIndex == index;
+    return GestureDetector(
+      onTap: () => _onTabSelected(index),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: isSelected ? Colors.green : Colors.grey.shade300, width: 1.5),
+        ),
+        child: Icon(icon, color: isSelected ? Colors.green : Colors.grey.shade300, size: 28),
+      ),
+    );
+  }
+
+  Widget _buildProductCard(Map<String, dynamic> product) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(25),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
       child: Stack(
         children: [
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: item['isSelected'] ? Colors.green : Colors.grey.shade200,
-                width: item['isSelected'] ? 2 : 1,
-              ),
-            ),
+          Padding(
+            padding: const EdgeInsets.all(12.0),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                ClipOval(
-                  child: Image.asset(
-                    item['image'],
-                    height: 100,
-                    width: 100,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => const Icon(Icons.fastfood, size: 50),
+                Expanded(
+                  child: Center(
+                    child: CircleAvatar(
+                      radius: 55,
+                      backgroundImage: AssetImage(product['image']),
+                    ),
                   ),
                 ),
-                const SizedBox(height: 10),
-                Text(item['name'], style: const TextStyle(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 5),
+                Text(product['name'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('\$ ${item['price']}',
-                        style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 16)),
-                    const SizedBox(width: 10),
-                    // Nút bấm chọn sản phẩm (Cập nhật số tiền & số item)
+                    Text("\$ ${product['price'].toStringAsFixed(2)}",
+                        style: const TextStyle(color: Color(0xFF6ED57B), fontWeight: FontWeight.bold, fontSize: 18)),
+                    // 2.5. Chuyển sang Meal Page
                     GestureDetector(
                       onTap: () {
-                        setState(() {
-                          item['isSelected'] = !item['isSelected'];
-                        });
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => MealPage(
+                              name: product['name'],
+                              price: product['price'].toStringAsFixed(0),
+                              imgUrl: product['image'],
+                              isFavorite: product['isFavorite'],
+                              description: product['description'],
+                              address: product['address'],
+                              deliveryTime: product['deliveryTime'],
+                            ),
+                          ),
+                        );
                       },
-                      child: CircleAvatar(
-                        radius: 12,
-                        backgroundColor: item['isSelected'] ? Colors.green : const Color(0xFFEEEEEE),
-                        child: Icon(
-                          item['isSelected'] ? Icons.check : Icons.add,
-                          size: 16,
-                          color: item['isSelected'] ? Colors.white : Colors.green,
-                        ),
-                      ),
-                    )
+                      child: const Icon(Icons.add_circle, color: Color(0xFF6ED57B), size: 32),
+                    ),
                   ],
                 )
               ],
             ),
           ),
-          // Nút Radio (Chỉnh màu khi chọn)
+          // 2.4. Checkbox chọn sản phẩm
           Positioned(
-            top: 10,
-            left: 10,
-            child: Icon(
-              item['isSelected'] ? Icons.radio_button_checked : Icons.radio_button_off,
-              color: item['isSelected'] ? Colors.green : Colors.grey.shade400,
-              size: 20,
-            ),
-          ),
-          // Nút Yêu thích (Thay đổi màu đỏ/xám khi click)
-          Positioned(
-            top: 10,
-            right: 10,
+            top: 12,
+            left: 12,
             child: GestureDetector(
-              onTap: () {
-                setState(() {
-                  item['isFav'] = !item['isFav'];
-                });
-              },
+              onTap: () => setState(() => product['isSelected'] = !product['isSelected']),
               child: Icon(
-                item['isFav'] ? Icons.favorite : Icons.favorite_border,
-                color: item['isFav'] ? Colors.red : Colors.grey,
-                size: 20,
+                Icons.radio_button_checked,
+                color: product['isSelected'] ? Colors.green : Colors.green.shade100,
+                size: 26,
               ),
             ),
           ),
-          if (item['discount'] != null)
-            Positioned(
-              top: 0,
-              left: 20,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(color: Colors.redAccent, borderRadius: BorderRadius.circular(10)),
-                child: Text(item['discount'], style: const TextStyle(color: Colors.white, fontSize: 10)),
+          // 2.3. Icon yêu thích
+          Positioned(
+            top: 12,
+            right: 12,
+            child: GestureDetector(
+              onTap: () => setState(() => product['isFavorite'] = !product['isFavorite']),
+              child: Icon(
+                Icons.favorite,
+                color: product['isFavorite'] ? Colors.red : Colors.grey.shade300,
+                size: 26,
               ),
-            )
+            ),
+          ),
         ],
       ),
     );
